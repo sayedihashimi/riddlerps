@@ -75,19 +75,6 @@ function Invoke-Prompts{
     }
 }
 
-function Get-GeneratorContext{
-    [cmdletbinding()]
-    param()
-    process{
-        $ctxValues = @{
-            pwd = $pwd
-            templateRoot = ($global:riddlerpssettings.TemplateRoot)
-        }
-
-        $ctxValues
-    }
-}
-
 function Write-MessagePrefix{
     [cmdletbinding()]
     param(
