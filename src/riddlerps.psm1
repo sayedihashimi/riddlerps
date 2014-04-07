@@ -9,7 +9,7 @@ function Get-ScriptDirectory
 
 $script:scriptDir = ((Get-ScriptDirectory) + "\")
 
-$global:kgensettings = New-Object psobject -Property @{    
+$global:riddlerpssettings = New-Object psobject -Property @{    
     MessagePrefix = '  '
     TemplateRoot = (Join-Path ($script:scriptDir) -ChildPath 'templates-v1\Add Project')
     IndentLevel = 1
@@ -22,7 +22,7 @@ function Invoke-WebGenerator {
     begin{}
     process{
 
-        $global:kgensettings.IndentLevel = 1
+        $global:riddlerpssettings.IndentLevel = 1
         $prompts = @(
         (New-Object psobject -Property @{
             Name='action'
@@ -42,14 +42,14 @@ Welcome to ASP.NET vNext
             Default='Quit'
         }))
         
-        $promptResult = Invoke-Prompts $prompts -indentLevel $global:kgensettings.IndentLevel
+        $promptResult = Invoke-Prompts $prompts -indentLevel $global:riddlerpssettings.IndentLevel
 
         switch ($promptResult['action']){
             'Add project' { Add-Project  }
             'Add file' { Add-File }
             'Install generator' { Install-Generator }
-            'Help' { KGen-Help }
-            'Quit' { KGen-Quit }
+            'Help' { Do-Help }
+            'Quit' { Do-Quit }
             default{ throw  ('Unknown choice: [{0}]' -f  $selectedOption) }
         } 
     }
@@ -191,7 +191,7 @@ function Get-GeneratorContext{
     process{
         $ctxValues = @{
             pwd = $pwd
-            templateRoot = ($global:kgensettings.TemplateRoot)
+            templateRoot = ($global:riddlerpssettings.TemplateRoot)
         }
 
         $ctxValues
@@ -205,7 +205,7 @@ function Write-MessagePrefix{
         $indentLevel = 1
     )
     process{
-        [string]$prefix=$global:kgensettings.MessagePrefix
+        [string]$prefix=$global:riddlerpssettings.MessagePrefix
         $prefix = ($prefix*$indentLevel)
         $prefix | Write-Host -NoNewline
     }
@@ -327,14 +327,14 @@ function Get-TextFromUser{
 #######################################################################
 # Misc functions for the main prompt
 #######################################################################
-function KGen-Help{
+function Do-Help{
     [cmdletbinding()]
     param()
     process{
         'Help here'
     }
 }
-function KGen-Quit{
+function Do-Quit{
     [cmdletbinding()]
     param()
     process{
@@ -394,7 +394,7 @@ function Add-ProjectContent {
         }
 
         $projType = $parameters['projtype']
-        $templateFolder = (get-item(Join-Path -Path $global:kgensettings.TemplateRoot -ChildPath $projType))
+        $templateFolder = (get-item(Join-Path -Path $global:riddlerpssettings.TemplateRoot -ChildPath $projType))
         if(-not (Test-Path $templateFolder)){
             throw ("Template folder not found at [{0}]" -f $templateFolder)
         }
