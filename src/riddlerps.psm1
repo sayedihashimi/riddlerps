@@ -16,116 +16,6 @@ $global:riddlerpssettings = New-Object psobject -Property @{
     WhatIf = $true
 }
 
-function Invoke-WebGenerator {
-    [cmdletbinding(SupportsShouldProcess=$true)]
-    param()
-    begin{}
-    process{
-
-        $global:riddlerpssettings.IndentLevel = 1
-        $prompts = @(
-        (New-Object psobject -Property @{
-            Name='action'
-            Text = '
-Welcome to ASP.NET vNext
-
-  What would you like to do?
-  '
-            Options = [ordered] @{
-                'Type'='PickOne'
-                'Add project'='Add project'
-                'Add file'='Add file'
-                'Install generator'='Install generator'
-                'Help'='Help'
-                'Quit'='Quit'
-            }
-            Default='Quit'
-        }))
-        
-        $promptResult = Invoke-Prompts $prompts -indentLevel $global:riddlerpssettings.IndentLevel
-
-        switch ($promptResult['action']){
-            'Add project' { Add-Project  }
-            'Add file' { Add-File }
-            'Install generator' { Install-Generator }
-            'Help' { Do-Help }
-            'Quit' { Do-Quit }
-            default{ throw  ('Unknown choice: [{0}]' -f  $selectedOption) }
-        } 
-    }
-}
-
-function Add-Project {
-    [cmdletbinding(SupportsShouldProcess=$true)]
-    param(
-        [switch]$showAllPrompts
-    )
-    process{
-        <#
-        questions:
-
-        project name
-        project type: mvc/web forms/mvc
-        unit test: yes/no
-        HasMvc
-        HasWebApi
-        HasWebForms
-        AuthType: WindowsAuth/None/IndividualAuth/OrgAuth
-        #>
-
-        $prompts = @((New-Object psobject -Property @{
-            Name='projname'
-            Text = 'Project name?'
-            Default='webapp'
-        }),
-        (New-Object psobject -Property @{
-            Name='projtype'
-            Text = 'Project type?'
-            Options = [ordered]@{'Type'='PickOne';'Empty'='Empty';'WebForms'='WebForms';'MVC'='MVC';'Web API'='Web API';'SPA'='SPA';'Facebook'='Facebook'}
-            Default = 'Empty'
-        }),
-        (New-Object psobject @{
-            Name='fxlist'
-            Text='Select Frameworks'
-            Options=[ordered]@{
-                'Type'='PickMany'
-                'addmvc' = 'Add mvc'
-                'addwebapi' = 'Add Web API'
-                'addwebforms' = 'Add Web Forms'
-            }
-        }),
-        (New-Object psobject -Property @{
-            Name = 'unittest'
-            Text='Do you want to add a unit test project?'
-            PromptAction = {
-                # you can have a custom action for your prompt as well
-                ConvertTo-Bool(Read-Host)
-            }
-            Default=$false
-        })
-        )
-
-        $promptResults = Invoke-Prompts $prompts -indentLevel 1
-
-        $ctx = Get-GeneratorContext
-        $ctx.Keys | ForEach-Object{
-            if(-not ($promptResults[$_])){
-                $promptResults[$_]=$ctx[$_]
-            }
-        }
-
-        Add-ProjectContent -parameters $promptResults -indentLevel 1
-    }
-}
-
-function Add-File{
-    [cmdletbinding()]
-    param()
-    process{
-        'Inside of Add-File'
-    }
-}
-
 #######################################################################
 # Functions dealing with user input/output
 #######################################################################
@@ -261,7 +151,7 @@ function Get-PromptResult{
                 }                
             }
             else{                
-                $optStr = (Convert-ToOptionsString -options $options)
+                $optStr = (ConvertTo-OptionsString -options $options)
                 $promptResult = Prompt-OptionsString -optionsString $optStr -optionsType $optionsType
                 foreach($key in $promptResult.Keys){
                     $results[$key]=$true
@@ -324,117 +214,6 @@ function Get-TextFromUser{
         Read-Host
     }
 }
-#######################################################################
-# Misc functions for the main prompt
-#######################################################################
-function Do-Help{
-    [cmdletbinding()]
-    param()
-    process{
-        'Help here'
-    }
-}
-function Do-Quit{
-    [cmdletbinding()]
-    param()
-    process{
-        'Quit'
-    }
-}
-function Install-Generator{
-    [cmdletbinding()]
-    param()
-    process{
-        'Help here'
-    }
-}
-
-#######################################################################
-# Functions that add content
-#######################################################################
-function Add-ProjectContent {
-    [cmdletbinding(SupportsShouldProcess=$true)]
-    param(
-        [Parameter(Position=0,
-                   ValueFromPipeline=$true)]
-        $parameters,
-        [Parameter(Position=1)]
-        $indentLevel = 1
-    )
-    process{
-        # $parameters | Write-PromptsSummary -indentLevel $indentLevel
-
-        # properties we are interested in
-        <#
-        $parameters['addmvc']
-        
-        $parameters['addwebapi']
-        $parameters['addwebforms']
-        $parameters['unittest']
-        $parameters['pwd']
-        #>
-        $projectName = $parameters['projname']
-        $targetFolder = join-path -path (get-item ($parameters['pwd'])) -ChildPath $projectName
-        if(-not (Test-Path $targetFolder)){ 
-            New-Item -ItemType Directory $targetFolder | Out-Null
-        }
-        $targetFolder = Get-Item $targetFolder
-
-        if(!(Test-FolderIsEmpty -folderPath $targetFolder)){
-            $prompt = @(New-Object psobject -Property @{
-                        Name = 'continuenotempty'
-                        Text='Folder is not empty, continue generating??'
-                        PromptAction = {
-                            ConvertTo-Bool(Get-TextFromUser)
-                        }})
-
-            if(-not (Invoke-Prompts -prompts $prompt)['continuenotempty']){
-                throw 'folder is not empty'
-            }
-        }
-
-        $projType = $parameters['projtype']
-        $templateFolder = (get-item(Join-Path -Path $global:riddlerpssettings.TemplateRoot -ChildPath $projType))
-        if(-not (Test-Path $templateFolder)){
-            throw ("Template folder not found at [{0}]" -f $templateFolder)
-        }
-
-        $files = Get-ChildItem $templateFolder -Recurse -File
-
-        Push-Location | Out-Null
-        Set-Location $targetFolder
-        $files | ForEach-Object{
-            $templateFile = (Get-Item $_.FullName)
-            $relFolder = Get-RelativePath -from ($templateFile.Directory.FullName) -to $targetFolder
-            $destFile = (Join-Path ($targetFolder.FullName) -ChildPath $templateFile.Name)
-
-            Copy-Item -LiteralPath ($templateFile.FullName) -Destination $destFile
-        }
-
-        $totalSeconds = 2        
-        if($parameters['addmvc']){
-            $seconds = 0
-            'Adding MVC' | Report-FakeProgress
-        }
-                
-        if($parameters['addwebapi']){
-            $seconds = 0
-            'Adding Web API' | Report-FakeProgress
-        }
-
-        if($parameters['addwebforms']){
-            $seconds = 0
-            'Adding Web forms' | Report-FakeProgress
-        }
-
-        if($parameters['unittest']){
-            $seconds = 0
-            'Adding a unit test project' | Report-FakeProgress
-        }
-
-        Pop-Location | Out-Null
-    }
-}
 
 function Report-FakeProgress{
     [cmdletbinding()]
@@ -478,30 +257,6 @@ function Get-RelativePath{
     }
 }
 
-function Test-FolderIsEmpty{
-    [cmdletbinding()]
-    param(
-        [Parameter(
-            Mandatory=$true,
-            ValueFromPipeline=$true)]
-        $folderPath
-    )
-    process{
-        if(-not (Test-Path $folderPath)){
-            $msg = ("The folder does not exist [{0}]" -f $folderPath)
-            throw $msg
-        }
-
-        # return true/false if its empty or not
-        if((Get-ChildItem $folderPath)){
-            $false
-        }
-        else{
-            $true
-        }
-    }
-}
-
 function ConvertTo-Bool{
     [cmdletbinding()]
     param(
@@ -526,12 +281,11 @@ function ConvertTo-Bool{
     }
 }
 
-
 #######################################################################
 # Functions relating to displaying/reading optoins
 #######################################################################
 
-function Convert-ToOptionsString{
+function ConvertTo-OptionsString{
     [cmdletbinding()]
     param(
         [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
@@ -554,7 +308,7 @@ function Convert-ToOptionsString{
 
             $str+=( '{0}${2}$ {1} {3}{4}' -f $delims[0], $delims[1],$key,$options[$key],"`n")
         }
-        $str|Write-Host
+
         $str
     }
 }
@@ -740,102 +494,3 @@ function Parse-OptonsString{
         }
     }
 }
-
-function Get-PromptResult-OLD{
-    [cmdletbinding()]
-    param(
-        [Parameter(Mandatory=$true,Position=0)]
-        $prompt,
-
-        [Parameter(Position=1)]
-        $indentLevel = 1
-    )
-    process{               
-        $name = $prompt.Name
-        
-        # display text/options
-        Write-MessagePrefix -indentLevel $indentLevel
-        "{0}" -f $prompt.Text | Write-Host
-        
-        $getValFromUser = $true
-        if($prompt.Options){
-            $options = $prompt.Options
-            $optionsType = $options.Type
-            if(-not $optionsType){$optionsType = 'Numbered'}
-
-            if($optionsType -eq 'Numbered'){
-                $counter = 0
-                
-                foreach($key in $prompt.Options.Keys){
-                    if($key -eq 'Type'){ continue }
-
-                    if( !($options -is [hashtable]) ){
-                        if($options -is [array] -and $options.Length -gt 1){
-                            $options = $options[1]
-                        }
-                    }
-                    Write-MessagePrefix -indentLevel $indentLevel
-                    '{0}={1}' -f $key, $options[$key] | Write-Host
-                }                
-            }
-            else{                
-                $optStr = (Convert-ToOptionsString -options $options)
-                $result = Prompt-OptionsString -optionsString $optStr -optionsType $optionsType
-                $getValFromUser = $false
-            }
-        }
-
-        if($getValFromUser){
-            Write-InputPromptText -indentLevel $indentLevel
-
-                    # get the value from the user
-            if($prompt.PromptAction -is [scriptblock]){
-                $result = (&($prompt.PromptAction))
-            }
-            else{
-                if($options){
-                    $result=($options[(Read-Host)])
-                }
-                else{
-                    $result= Read-Host
-                }
-            }
-
-            ' ' | Write-Host
-            if(-not $result){ $result=$prompt.Default }
-        }
-
-        return $result
-    }
-}
-#######################################################################
-# Begin script
-#######################################################################
-$prompts = @(
-        (New-Object psobject -Property @{
-            Name = 'unittest'
-            Text='Do you want to add a unit test project?'
-            PromptAction = {
-                # you can have a custom action for your prompt as well
-                ConvertTo-Bool(Read-Host)
-            }
-        }),
-        (New-Object psobject -Property @{
-            Name='addmvc'
-            Text='Do you want to add MVC?'
-            Type='Optional'
-            Default=$false
-        }),
-        (New-Object psobject -Property @{
-            Name='addwebapi'
-            Text='Do you want to add Web API?'
-            Type='Optional'
-            Default=$false
-        }),
-        (New-Object psobject -Property @{
-            name='addwebforms'
-            Text='Do you want to add webforms'
-            Type='Optional'
-            Default=$false
-        })
-        )
