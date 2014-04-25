@@ -358,8 +358,13 @@ function Prompt-OptionsString{
             $Host.UI.RawUI.CursorSize = 100
             $key = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
             $pos = $Host.UI.RawUI.CursorPosition
-            if( @(81,13,27).Contains($key.VirtualKeyCode) ){
+            if( @(81,27).Contains($key.VirtualKeyCode) ){
                 # q, Enter, Esc
+                $continueloop = $false
+                break
+            }
+            elseif($optionsType -eq 'PickMany' -and $key.VirtualKeyCode -eq 13){
+                # Enter key for PickMany
                 $continueloop = $false
                 break
             }
@@ -375,8 +380,11 @@ function Prompt-OptionsString{
                     $Host.UI.RawUI.CursorPosition = New-Object System.Management.Automation.Host.Coordinates -ArgumentList @($pos.X,([int]($pos.Y)+1))
                 }
             }
-            elseif($key.VirtualKeycode -ge 48 -and $key.VirtualKeyCode -le 90 -or $key.VirtualKeyCode -eq 32){
-                # any key 0-9 or a-z and spacebar (32)
+            elseif(
+                ($key.VirtualKeycode -ge 48 -and $key.VirtualKeyCode -le 90) -or 
+                ($key.VirtualKeyCode -eq 32) -or 
+                ($key.VirtualKeyCode -eq 13)){
+                # any key 0-9 or a-z; spacebar (32); Enter (13)
                 $nowPos = $Host.UI.RawUI.CursorPosition
                 $setValue = $false
                 foreach($p in $displayPoints){
