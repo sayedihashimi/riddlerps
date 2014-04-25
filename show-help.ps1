@@ -42,7 +42,7 @@ function what-is{
     [cmdletbinding()]
     param()
     process{
-        'RiddlerPS is a PowerShell module that simplifies user interaction in PowerShell.' | Write-Host
+        'RiddlerPS is a PowerShell module that simplifies user interaction in PowerShell.' | Write-Example
     }
 }
 
