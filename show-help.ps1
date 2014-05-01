@@ -227,7 +227,28 @@ function Show-CustomPromptAction{
     [cmdletbinding()]
     param()
     process{
-        'show custom prompt action here'
+        'In some cases you will need more control when the user is prompted for a value. For example
+if you prompt the user for a yes/no value you may need to convert that to a boolean value. For these cases
+you can use a PromptAction. When a PromptAction is proved I will take care of prompting the user, and then
+the PromptAction is invoked. You can use the Get-TextFromUser function to read keys. Here is an example.' | Write-Host
+    
+        $str = 
+@'
+        $prompts =  (New-Object psobject -Property @{
+            Name = 'unittest'
+            Text='Do you want to add a unit test project?'
+            PromptAction = {
+                # here we receive the input and then convert it to a boolean
+                ConvertTo-Bool(Get-TextFromUser)
+            }
+            Default=$false
+        })
+
+        $promptResult = Invoke-Prompts $prompts
+'@
+        $str | Write-Example
+        Invoke-Expression $str
+        "Your reply {0}`r`n" -f $promptResult['unittest'] | Write-Host
     }
 }
 

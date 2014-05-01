@@ -49,7 +49,7 @@ function Invoke-Prompts{
             'Show all options?' | Write-Host
             Write-InputPromptText -indentLevel $indentLevel
 
-            $showAllOptoins = ConvertTo-Bool (Read-Host)
+            $showAllOptoins = ConvertTo-Bool (Get-TextFromUser)
             ' ' | Write-Host
 
             # loop through optional prompts, only prompt if user accepts.

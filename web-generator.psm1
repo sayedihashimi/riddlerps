@@ -99,7 +99,7 @@ function Add-Project {
             Text='Do you want to add a unit test project?'
             PromptAction = {
                 # you can have a custom action for your prompt as well
-                ConvertTo-Bool(Read-Host)
+                ConvertTo-Bool(Get-TextFromUser)
             }
             Default=$false
         })
@@ -291,7 +291,7 @@ $prompts = @(
             Text='Do you want to add a unit test project?'
             PromptAction = {
                 # you can have a custom action for your prompt as well
-                ConvertTo-Bool(Read-Host)
+                ConvertTo-Bool(Get-TextFromUser)
             }
         }),
         (New-Object psobject -Property @{
