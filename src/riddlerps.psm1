@@ -454,6 +454,41 @@ function Prompt-OptionsString{
         $results
     }
 }
+
+function New-PromptObject{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipelineByPropertyName =$true)]
+        $name = 'userprompt',
+        [Parameter(Position=1,Mandatory=$true,ValueFromPipelineByPropertyName =$true)]
+        $text,
+        [Parameter(Position=2,ValueFromPipelineByPropertyName =$true)]
+        [ValidateSet("Question","PickOne","PickMany","Ordered")]
+        $promptType = "Question",
+        [Parameter(Position=3,ValueFromPipelineByPropertyName =$true)]
+        $options,
+        [Parameter(Position=4,ValueFromPipelineByPropertyName=$true)]
+        [ScriptBlock]$promptAction,
+        $defaultValue
+    )
+    process{
+        # we need to add the type to the options object
+        if($options -is [hashtable] -or
+            $options -is [System.Collections.Specialized.OrderedDictionary]){
+                $options['type']=$promptType
+            }
+
+        New-Object psobject -Property @{
+            Name = $name
+            Text = $text
+            Default = $defaultValue
+            Options = $options
+            PromptType = $promptType
+            PromptAction=$promptAction
+        }
+    }
+}
+
 function Parse-OptonsString{
     [cmdletbinding()]
     param(

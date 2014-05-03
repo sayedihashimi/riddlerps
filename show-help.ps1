@@ -8,25 +8,21 @@ function Show-RiddlerPSHelp{
     process{
 
         $prompts = @(
-            New-Object psobject -Property @{
-                Name='action'
-                Text="`r`nHi, I am the Riddler. How can I help?"
-                Options= [ordered]@{
-                    'Type'='PickOne'
+                New-PromptObject `
+                -promptType PickOne `
+                -text "`r`nHi, I am the Riddler. How can I help?" `
+                    -options ([ordered]@{
                     'what-is'='What is RiddlerPS?'
                     'show-ex'='Show me how to use RidderPS'
                     'show-docs'='Take me to the docs!'
-                    'report-issue'='Report an issue'
-                    'quit'='Quit'
-                }
-            }
-        )        
+                    'report-issue'='Report an issue'; 'quit'='Quit'})            
+        )
         
         $continueLoop = $true
         while($continueLoop){
             $promptResult = Invoke-Prompts $prompts 
             # execute the result
-            switch ($promptResult['action']){
+            switch ($promptResult['userprompt']){
                 'what-is' {what-is}
                 'show-ex' {show-examples}
                 'show-docs' { start 'https://github.com/sayedihashimi/riddlerps' }
@@ -51,11 +47,9 @@ function show-examples{
     param()
     process{
         $prompts = @(
-            New-Object psobject -Property @{
-                Name='action'
-                Text="`r`nWhat kind of example are you looking for?"
-                Options=[ordered]@{
-                    'Type'='PickOne'
+            New-PromptObject -text "`r`nWhat kind of example are you looking for?" `
+                -promptType PickOne `
+                -options ([ordered]@{
                     'question'='How can I ask the user a question?'
                     'pickone'='How can I show a list where one value can be selected?'
                     'pickmany'='How can I show a list where more than one value can be selected'
@@ -63,14 +57,13 @@ function show-examples{
                     'customprompt'='How to handle custom actions'
                     'goback'='Go back'
                     'quit'='Quit'
-                }
-            })
+                }))
 
         $continueLoop = $true
         while($continueLoop){
             $promptResult = Invoke-Prompts $prompts
 
-            switch($promptResult['action']){
+            switch($promptResult['userprompt']){
                 'question' { Show-Question }
                 'pickone' {Show-PickOne}
                 'pickmany' {Show-PickMany}
@@ -101,10 +94,7 @@ function Show-Question{
     param()
     process{
         $str = @'
-        $prompt = New-Object psobject -Property @{                 
-                    Name='action'
-                    Text='What is your name?'
-        }
+        $prompt = New-PromptObject -text 'What is your name?'
 
         $promptResult = Invoke-Prompts $prompt
 '@
@@ -113,7 +103,7 @@ function Show-Question{
         $str | Write-Example
 
         Invoke-Expression $str
-        "Your reply: '{0}'`r`n" -f $promptResult['action'] | Write-Host
+        "Your reply: '{0}'`r`n" -f $promptResult['userprompt'] | Write-Host
     }
 }
 
@@ -124,18 +114,15 @@ function Show-PickOne{
         'To show a list of options where the user can select one value you will use the
 PickOne method. Let''s try it' | Write-Host
         $str = @'
-        $prompt = New-Object psobject -Property @{                 
-            Name='action'
-            Text='What type of project do you want to create?'
-            Options=[ordered]@{
-                'Type'='PickOne'
-                'mvc'='ASP.NET MVC'
-                'webforms'='ASP.NET Web Forms'
-                'webapi'='ASP.NET Web API'
-                'goback'='Go back'
-                'quit' = 'Quit'
-            }
-        }
+        $prompt = New-PromptObject -name 'action' -text 'What type of project do you want to create?' `
+                    -promptType PickOne `
+                    -options ([ordered]@{
+                                'mvc'='ASP.NET MVC'
+                                'webforms'='ASP.NET Web Forms'
+                                'webapi'='ASP.NET Web API'
+                                'goback'='Go back'
+                                'quit' = 'Quit'
+                            })
 
         $promptResult = Invoke-Prompts $prompt
 '@
@@ -156,16 +143,16 @@ you will use the PickMany method. With PickMany the result may have multiple res
 The respons will be returned as a hashtable with all selected values
 set to true. All other values will be omitted from the result.' | Write-Host
         $str = @'
-        $prompt = New-Object psobject -Property @{                 
-            Name='action'
-            Text='Pick the frameworks you would like to include in your poject?'
-            Options=[ordered]@{
+        $prompt = New-PromptObject -name 'action' `
+            -text 'Pick the frameworks you would like to include in your poject?' `
+            -promptType PickMany `
+            -options ([ordered]@{
                 'Type'='PickMany'
                 'mvc'='ASP.NET MVC'
                 'webforms'='ASP.NET Web Forms'
                 'webapi'='ASP.NET Web API'
-            }
-        }
+            })
+
 
         $promptResult = Invoke-Prompts $prompt
 '@
@@ -188,29 +175,35 @@ function Show-MultiQuestions{
 I will take care of prompting the user and returning all values back to you
 in a hashtable. Selected values will be incldued. Let''s see this in action.' | Write-Host
 
-    $str =
-@'
-        $prompts = @((New-Object psobject -Property @{
-            Name='projname'
-            Text = 'Project name?'
-            Default='webapp'
-        }),
-        (New-Object psobject -Property @{
-            Name='projtype'
-            Text = 'Project type?'
-            Options = [ordered]@{'Type'='PickOne';'Empty'='Empty';'WebForms'='WebForms';'MVC'='MVC';'Web API'='Web API';'SPA'='SPA';'Facebook'='Facebook'}
-            Default = 'Empty'
-        }),
-        (New-Object psobject @{
-            Name='fxlist'
-            Text='Select Frameworks'
-            Options=[ordered]@{
-                'Type'='PickMany'
+    $prompts = @(
+        (New-PromptObject -name 'projname' -text 'Project name' -defaultValue 'webapp'),
+
+        (New-PromptObject -name 'projtype' 'Project type?' -promptType PickOne `
+            -options ([ordered]@{'Empty'='Empty';'WebForms'='WebForms';'MVC'='MVC';'Web API'='Web API';'SPA'='SPA';'Facebook'='Facebook'})),
+
+        (New-PromptObject -name 'fxlist' -text 'Select Frameworks' `
+            -promptType PickMany `
+            -options ([ordered]@{
                 'addmvc' = 'Add mvc'
                 'addwebapi' = 'Add Web API'
                 'addwebforms' = 'Add Web Forms'
-            }
-        }))
+            })))
+
+    $str =
+@'
+        $prompts = @(
+        (New-PromptObject -name 'projname' -text 'Project name' -defaultValue 'webapp'),
+
+        (New-PromptObject -name 'projtype' 'Project type?' -promptType PickOne `
+            -options ([ordered]@{'Empty'='Empty';'WebForms'='WebForms';'MVC'='MVC';'Web API'='Web API';'SPA'='SPA';'Facebook'='Facebook'})),
+
+        (New-PromptObject -name 'fxlist' -text 'Select Frameworks' `
+            -promptType PickMany `
+            -options ([ordered]@{
+                'addmvc' = 'Add mvc'
+                'addwebapi' = 'Add Web API'
+                'addwebforms' = 'Add Web Forms'
+            })))
 
         $promptResult = Invoke-Prompts $prompts
 
@@ -231,18 +224,15 @@ function Show-CustomPromptAction{
 if you prompt the user for a yes/no value you may need to convert that to a boolean value. For these cases
 you can use a PromptAction. When a PromptAction is proved I will take care of prompting the user, and then
 the PromptAction is invoked. You can use the Get-TextFromUser function to read keys. Here is an example.' | Write-Host
-    
+        
         $str = 
 @'
-        $prompts =  (New-Object psobject -Property @{
-            Name = 'unittest'
-            Text='Do you want to add a unit test project?'
-            PromptAction = {
+        $prompts = New-PromptObject -name 'unittest' -text 'Do you want to add a unit test project?' `
+            -defaultValue $false `
+            -promptAction {
                 # here we receive the input and then convert it to a boolean
                 ConvertTo-Bool(Get-TextFromUser)
             }
-            Default=$false
-        })
 
         $promptResult = Invoke-Prompts $prompts
 '@
