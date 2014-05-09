@@ -14,6 +14,7 @@ $global:riddlerpssettings = New-Object psobject -Property @{
     TemplateRoot = (Join-Path ($script:scriptDir) -ChildPath 'templates-v1\Add Project')
     IndentLevel = 1
     WhatIf = $true
+    QuitResultKey = 'rps-quit'
 }
 
 #######################################################################
@@ -351,6 +352,7 @@ function Prompt-OptionsString{
         $oldCursorSize = $Host.UI.RawUI.CursorSize
         $oldFgColor = $Host.ui.RawUI.ForegroundColor
         $Host.UI.RawUI.ForegroundColor = 'Yellow'
+        $results = @{}
         if($GitPromptSettings){
             $GitPromptSettings.DefaultForegroundColor = $Host.UI.RawUI.ForegroundColor
         }
@@ -359,8 +361,9 @@ function Prompt-OptionsString{
             $key = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
             $pos = $Host.UI.RawUI.CursorPosition
             if( @(81,27).Contains($key.VirtualKeyCode) ){
-                # q, Enter, Esc
+                # q, Esc
                 $continueloop = $false
+                $results[($global:riddlerpssettings.QuitResultKey)]=$true
                 break
             }
             elseif($optionsType -eq 'PickMany' -and $key.VirtualKeyCode -eq 13){
@@ -432,7 +435,7 @@ function Prompt-OptionsString{
 
         $Host.UI.RawUI.CursorSize = $oldCursorSize
         $Host.UI.RawUI.CursorPosition = $oldPos
-        $results = @{}
+        
         # now loop through display points and see if they have some text
         foreach($displayPoint in $displayPoints){        
             $p = $displayPoint.CursorPosition
