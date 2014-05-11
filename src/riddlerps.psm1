@@ -248,19 +248,20 @@ function Get-RelativePath{
 function ConvertTo-Bool{
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+        [Parameter(ValueFromPipeline=$true)]
         [string]$valueToConvert
     )
     process{
         $truePattern = 'true|t|1|y[es]|y'
-        $falsePattern = 'false|f|0|n[o]|n'
-        
+        $falsePattern = 'false|f|0|n[o]|n'       
+
         if($valueToConvert -match $truePattern){
             $valueToReturn = $true   
         }
         elseif($valueToConvert -match $falsePattern){
             $valueToReturn = $false
         }
+        elseif(-not $valueToConvert){ <# ignore it#> }
         else{
             throw ('Unknown bool value to convert: [{0}]' -f $valueToConvert)
         }
@@ -483,6 +484,11 @@ function New-PromptObject{
 
         if($promptType -eq 'Bool'){
             $promptAction = ({ ConvertTo-Bool(Get-TextFromUser) })
+
+            if(-not $defaultValue){
+                $defaultValue = 'no'
+            }
+
         }
 
         New-Object psobject -Property @{
