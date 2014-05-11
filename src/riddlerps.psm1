@@ -31,8 +31,8 @@ function Invoke-Prompts{
         [int]$indentLevel=1
     )
     process{
-        $results = @{}
-
+        $private:results = @{}
+        
         $requiredPrompts = $prompts | Where-Object { !($_.Type) -or ($_.Type -ne 'optional') }
         $optionalPrompts = $prompts | Where-Object { $_.Type -and ($_.Type -eq 'optional') }
 
@@ -40,9 +40,10 @@ function Invoke-Prompts{
             $prompt = $_
             $result = Get-PromptResult -prompt $prompt -indentLevel $indentLevel
             foreach($key in $result.Keys){
-                $results[$key]=$result[$_.Name]
+                $private:results[$key]=$result[$_.Name]
             }
         }
+
         if($optionalPrompts){
             # optional prompts exist, see if the user want's to answer the questions
             Write-MessagePrefix -indentLevel $indentLevel
@@ -70,6 +71,7 @@ function Invoke-Prompts{
                 $results[$key]=$prompt.Default
             }
         }
+
         # return results
         $results
     }
@@ -172,6 +174,7 @@ function Get-PromptResult{
 
             $result[$prompt.Name]=$valFromUser
         }
+
         return $result
     }
 }
