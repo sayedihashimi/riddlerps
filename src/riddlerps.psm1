@@ -43,7 +43,6 @@ function Invoke-Prompts{
                 $results[$key]=$result[$_.Name]
             }
         }
-
         if($optionalPrompts){
             # optional prompts exist, see if the user want's to answer the questions
             Write-MessagePrefix -indentLevel $indentLevel
@@ -67,7 +66,7 @@ function Invoke-Prompts{
 
         # apply default values here
         foreach($key in $result.Keys){
-            if(-not $result[$key]){
+            if($result[$key] -eq $null){
                 $results[$key]=$prompt.Default
             }
         }
@@ -161,7 +160,6 @@ function Get-PromptResult{
             else{
                 
                 if($options){
-                    'options [{0}]' -f $options | Write-Host -ForegroundColor Red
                     $valFromUser=($options[(Read-Host)])
                 }
                 else{
@@ -170,11 +168,10 @@ function Get-PromptResult{
             }
 
             ' ' | Write-Host
-            if(-not $valFromUser){ $valFromUser=$prompt.Default }
+            if($valFromUser -eq $null){ $valFromUser=$prompt.Default }
 
             $result[$prompt.Name]=$valFromUser
         }
-
         return $result
     }
 }
@@ -466,7 +463,7 @@ function New-PromptObject{
         [Parameter(Position=1,Mandatory=$true,ValueFromPipelineByPropertyName =$true)]
         $text,
         [Parameter(Position=2,ValueFromPipelineByPropertyName =$true)]
-        [ValidateSet("Question","PickOne","PickMany","Ordered")]
+        [ValidateSet("Question","PickOne","PickMany",'Bool',"Ordered")]
         $promptType = "Question",
         [Parameter(Position=3,ValueFromPipelineByPropertyName =$true)]
         $options,
@@ -480,6 +477,10 @@ function New-PromptObject{
             $options -is [System.Collections.Specialized.OrderedDictionary]){
                 $options['type']=$promptType
             }
+
+        if($promptType -eq 'Bool'){
+            $promptAction = ({ ConvertTo-Bool(Get-TextFromUser) })
+        }
 
         New-Object psobject -Property @{
             Name = $name
