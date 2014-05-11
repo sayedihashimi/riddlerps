@@ -114,6 +114,7 @@ function Get-PromptResult{
     process{
         $name = $prompt.Name
         $result = @{}
+        $private:results = @{}
 
         # display text/options
         Write-MessagePrefix -indentLevel $indentLevel
@@ -476,20 +477,29 @@ function New-PromptObject{
         $defaultValue
     )
     process{
+        
+        # Convert Bool type to a PickOne
+        if($promptType -eq 'Bool'){
+            $promptAction = ({ ConvertTo-Bool(Get-TextFromUser) })
+
+            $promptType = 'PickOne'
+
+            if(-not $defaultValue){
+                $defaultValue = 'no'
+            }
+
+            $options = ([ordered]@{
+                            'yes'='Yes'
+                            'no'='No'
+                        })
+        }
+
         # we need to add the type to the options object
         if($options -is [hashtable] -or
             $options -is [System.Collections.Specialized.OrderedDictionary]){
                 $options['type']=$promptType
             }
 
-        if($promptType -eq 'Bool'){
-            $promptAction = ({ ConvertTo-Bool(Get-TextFromUser) })
-
-            if(-not $defaultValue){
-                $defaultValue = 'no'
-            }
-
-        }
 
         New-Object psobject -Property @{
             Name = $name

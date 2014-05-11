@@ -20,3 +20,7 @@ $prompt = (New-PromptObject -name 'Unit tests' -promptType PickOne -text 'Unit t
     -promptAction { ConvertTo-Bool(Get-TextFromUser) } )
     
 Invoke-Prompts $prompt
+
+
+$prompt2 = New-PromptObject -name 'test' -text 'Test it?' -promptType Bool
+Invoke-Prompts $prompt2
