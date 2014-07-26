@@ -40,7 +40,13 @@ function Invoke-Prompts{
             $prompt = $_
             $result = Get-PromptResult -prompt $prompt -indentLevel $indentLevel
             foreach($key in $result.Keys){
-                $private:results[$key]=$result[$_.Name]
+                if($prompt.PromptType -eq 'PickMany'){
+                    $private:results[$key]=$result[$key]
+                }
+                else{
+                    $private:results[$key]=$result[$_.Name]
+                }
+                
             }
         }
 
@@ -143,11 +149,17 @@ function Get-PromptResult{
             else{                
                 $optStr = (ConvertTo-OptionsString -options $options)
                 $promptResult = Prompt-OptionsString -optionsString $optStr -optionsType $optionsType
+
                 foreach($key in $promptResult.Keys){
                     $results[$key]=$true
                 }
                 if($optionsType -eq 'PickOne'){
                     $result[$prompt.Name]=($promptResult.Keys | Select-Object -First 1)
+                }
+                elseif($optionsType -eq 'PickMany'){
+                    foreach($key in $promptResult.Keys){
+                        $result[$key]=$key
+                    }
                 }
                 $getValFromUser = $false
             }
@@ -455,7 +467,7 @@ function Prompt-OptionsString{
             ' ' |Write-Host
             $selectedOptions += $_.Name
         }
-
+        'results: [{0}]' -f ($results.Keys -join ';') | Write-Verbose
         $results
     }
 }
@@ -465,16 +477,23 @@ function New-PromptObject{
     param(
         [Parameter(Position=0,ValueFromPipelineByPropertyName =$true)]
         $name = 'userprompt',
+
         [Parameter(Position=1,Mandatory=$true,ValueFromPipelineByPropertyName =$true)]
         $text,
+
         [Parameter(Position=2,ValueFromPipelineByPropertyName =$true)]
         [ValidateSet("Question","PickOne","PickMany",'Bool',"Ordered")]
         $promptType = "Question",
+
         [Parameter(Position=3,ValueFromPipelineByPropertyName =$true)]
         $options,
+
         [Parameter(Position=4,ValueFromPipelineByPropertyName=$true)]
         [ScriptBlock]$promptAction,
-        $defaultValue
+        $defaultValue,
+
+        [Parameter(Position=5,ValueFromPipelineByPropertyName=$true)]
+        [bool]$optional = $false
     )
     process{
         
@@ -500,7 +519,8 @@ function New-PromptObject{
                 $options['type']=$promptType
             }
 
-
+        $typeToAdd = $null
+        
         New-Object psobject -Property @{
             Name = $name
             Text = $text
@@ -508,6 +528,7 @@ function New-PromptObject{
             Options = $options
             PromptType = $promptType
             PromptAction=$promptAction
+            Type = $typeToAdd
         }
     }
 }
