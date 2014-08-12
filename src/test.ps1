@@ -120,7 +120,14 @@ function new-project{
     [cmdletbinding()]
     param()
     process{
-        yo aspnet
+        try{
+            yo aspnet
+        }
+        catch{
+            'There was an error invoking ' | Write-Host -NoNewline -ForegroundColor Red
+            'yo aspnet' | Write-Host -ForegroundColor Green
+            'Please double check that you have both yeoman (http://yeoman.io/) and the aspnet generator installed' | Write-Host -ForegroundColor Red
+        }
     }
 }
 <#
