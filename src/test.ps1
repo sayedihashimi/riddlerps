@@ -15,6 +15,26 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 
 $script:kmImported = $false
 
+function Check-ForProjectJson{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeLine=$true)]
+        $folderToCheck = $pwd,
+        [Parameter(Position=1)]
+        $warnIfNotFound=$true,
+        [Parameter(Position=2)]
+        $warningMessage = 'project.json not found are you in the right folder?'
+    )
+    process{
+        $pathToCheck = "$folderToCheck\project.json"
+        $projectJsonExists = (Test-Path $pathToCheck)
+        
+        # see if there is a 'project.json' file in the folder
+        if(!$projectJsonExists -and $warnIfNotFound){
+            $warningMessage -f $pathToCheck | Write-Warning
+        }
+    }
+}
 function Write-UserCommand{
     [cmdletbinding()]
     param(
@@ -22,7 +42,7 @@ function Write-UserCommand{
         $text
     )
     process{
-        "$text`r`n" | Write-Host -ForegroundColor Green
+        "`r`nPS> $text`r`n" | Write-Host -ForegroundColor Green
     }
 }
 
@@ -49,6 +69,7 @@ function install-global{
         powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/aspnet/Home/master/kvminstall.ps1'))"
     }
 }
+
 function kvm-list{
     [cmdletbinding()]
     param()
@@ -100,6 +121,7 @@ function restore-pkgs{
     [cmdletbinding()]
     param()
     process{
+        Check-ForProjectJson
         kpm restore
 
         'kpm restore' | Write-UserCommand
@@ -109,7 +131,8 @@ function restore-pkgs{
 function build-project{
     [cmdletbinding()]
     param()
-    process{        
+    process{
+        Check-ForProjectJson
         kpm build
 
         'kpm build' | Write-UserCommand
@@ -130,20 +153,6 @@ function new-project{
         }
     }
 }
-<#
-$prompt = New-PromptObject -name 'action' `
-            -text 'Select options' `
-            -promptType PickMany `
-            -options ([ordered]@{
-                'Type'='PickMany'
-                'persistent'='Persistent (add KRE bin to PATH environment variables persistently)'
-                'global'='Global (install to machine-wide location)'
-                'force'='Force (install even if specified version is already installed)'
-            })
-$promptResult = Invoke-Prompts $prompt
-exit
-#>
-
 
 $p = New-PromptObject `
         -promptType PickOne `
