@@ -70,6 +70,25 @@ function install-global{
     }
 }
 
+function Add-Proxy-If-Specified {
+param(
+    [System.Net.WebClient] $wc
+)
+    if (!$proxy) {
+        $proxy = $env:http_proxy
+    }
+    if ($proxy) {
+        $wp = New-Object System.Net.WebProxy($proxy)
+        $pb = New-Object UriBuilder($proxy)
+        if (!$pb.UserName) {
+            $wp.Credentials = [System.Net.CredentialCache]::DefaultCredentials
+        } else {
+            $wp.Credentials = New-Object System.Net.NetworkCredential($pb.UserName, $pb.Password)
+        }
+        $wc.Proxy = $wp
+    }
+}
+
 function kvm-list{
     [cmdletbinding()]
     param()
@@ -154,9 +173,21 @@ function new-project{
     }
 }
 
+function Do-Quit{
+    [cmdletbinding()]
+    param()
+    process{
+        "Goodbye`r`n" | Write-Host
+        exit
+    }
+}
+
+# add a blank space
+'' | Write-Host
+
 $p = New-PromptObject `
         -promptType PickOne `
-        -text 'How can I help you?' `
+        -text 'How can I help you? You can use the ↑ ↓ to move to an option and then hit Enter' `
         -options ([ordered]@{
             'install-global'='Install (global) KVM from the web'
             'update-kvm-latest'='Update kvm to latest'
@@ -164,12 +195,16 @@ $p = New-PromptObject `
             'new-project'='Create a new project'
             'restore-pkgs'='Restore NuGet packages'
             'build-project'='Build project'
+            'do-quit'='Stop tutorial (q)'
         })
 
-$action = (Invoke-Prompts $p)['userprompt']
+while($true){
+    $action = (Invoke-Prompts $p)['userprompt']
 
-if(!$action -or ($action -eq 'rps-quit')) {
-    exit
+    if(!$action -or ($action -eq 'rps-quit')) {
+        exit
+    }
+
+    &$action
 }
 
-&$action

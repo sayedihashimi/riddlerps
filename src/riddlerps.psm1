@@ -115,7 +115,9 @@ function Get-PromptResult{
         $prompt,
 
         [Parameter(Position=1)]
-        $indentLevel = 1
+        $indentLevel = 1,
+
+        $promptForgroundColor = 'Cyan'
     )
     process{
         $name = $prompt.Name
@@ -124,7 +126,7 @@ function Get-PromptResult{
 
         # display text/options
         Write-MessagePrefix -indentLevel $indentLevel
-        "{0}" -f $prompt.Text| Write-Host
+        "{0}" -f $prompt.Text| Write-Host -ForegroundColor $promptForgroundColor
         $options = $prompt.Options
         $getValFromUser = $true
         if($prompt.Options){
