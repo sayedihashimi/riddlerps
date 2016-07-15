@@ -22,7 +22,7 @@ $global:riddlerpssettings = New-Object psobject -Property @{
 #######################################################################
 
 function Invoke-Prompts{
-    [cmdletbinding()]
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true,Position=0)]
         $prompts,
