@@ -152,15 +152,13 @@ function Get-PromptResult{
                 $optStr = (ConvertTo-OptionsString -options $options)
                 $promptResult = Prompt-OptionsString -optionsString $optStr -optionsType $optionsType
 
-                foreach($key in $promptResult.Keys){
-                    $results[$key]=$true
-                }
+
                 if($optionsType -eq 'PickOne'){
                     $result[$prompt.Name]=($promptResult.Keys | Select-Object -First 1)
                 }
                 elseif($optionsType -eq 'PickMany'){
                     foreach($key in $promptResult.Keys){
-                        $result[$key]=$key
+                        $result[$prompt.Name]=$promptResult.Keys
                     }
                 }
                 $getValFromUser = $false
