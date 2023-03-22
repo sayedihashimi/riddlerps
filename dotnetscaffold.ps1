@@ -46,8 +46,6 @@ function dotnet-scaffold-api{
             'minimal' {dotnet-scaffold-api-minimal}
             'controller' {dotnet-scaffold-api-controller}
         }
-
-        'Selection: {0}' -f $promptResult['userprompt']  | Write-output
     }
 }
 function dotnet-scaffold-api-minimal{
@@ -89,8 +87,9 @@ function dotnet-scaffold-api-controller-empty{
         $promptResult = Invoke-Prompts $prompt
 
         'Generating {0}.cs in folder {1}' -f $promptResult['userprompt'],$pwd | Write-Output
-        '  working ........................' | Write-output
+        ShowProgressMessage
         'Succeeded without any issues' | Write-Output
+        "`r`nRun the command below to get the same result without console interactivity: `r`n`tdotnet scaffold api controller empty {0}" -f $promptResult['userprompt'] | Write-output
     }
 }
 function dotnet-scaffold-api-controller-readwrite{
@@ -101,8 +100,9 @@ function dotnet-scaffold-api-controller-readwrite{
         $promptResult = Invoke-Prompts $prompt
 
         'Generating read/write controller {0}.cs in folder {1}' -f $promptResult['userprompt'],$pwd | Write-Output
-        '  working ........................' | Write-output
+        ShowProgressMessage
         'Succeeded without any issues' | Write-Output
+        "`r`nRun this command to get the same result without interactivity: `r`n`tdotnet scaffold api controller readwrite {0}" -f $promptResult['userprompt'] | Write-output
     }
 }
 function dotnet-scaffold-api-controller-ef{
@@ -125,11 +125,29 @@ function dotnet-scaffold-identity{
     process{
         'inside identity' | write-output
     }
-}function dotnet-scaffold-layout{
+}
+function dotnet-scaffold-layout{
     [cmdletbinding()]
     param()
     process{
         'inside layout' | write-output
+    }
+}
+
+function ShowProgressMessage{
+    [cmdletbinding()]
+    param()
+    process{
+        [int]$numChars = 60;
+        [int]$waitTimeMilliseconds = 100
+
+        "Working " | Write-Host -NoNewline
+        for($i = 0;$i -lt $numChars;$i++){
+            '*' | Write-Host -NoNewline
+            Start-Sleep -Milliseconds 50
+        }
+        # to get the cursor on a new line for future output
+        '' | Write-Host
     }
 }
 
