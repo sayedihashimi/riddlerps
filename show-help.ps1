@@ -30,7 +30,7 @@ function Show-RiddlerPSHelp{
                 'quit' { 'Goodbye'; $continueLoop = $false  }
                 default{ throw  ('Unknown choice: [{0}]' -f  $selectedOption) }
             }
-        }        
+        }
     }
 }
 
