@@ -75,7 +75,8 @@ function dotnet-scaffold-api-controller{
         switch($promptResult['userprompt']){
             'empty' {dotnet-scaffold-api-controller-empty}
             'readwrite' {dotnet-scaffold-api-controller-readwrite}
-            default{ throw  ('Unknown choice: [{0}]' -f  $selectedOption) }
+            'withef' {dotnet-scaffold-api-controller-ef}
+            default{ throw  ('Unknown choice: [{0}]' -f  $promptResult['userprompt']) }
         }
     }
 }
@@ -109,7 +110,10 @@ function dotnet-scaffold-api-controller-ef{
     [cmdletbinding()]
     param()
     process{
-
+        $prompt = New-PromptObject -text 'What model class do you want to generte the content from? (Partial name is OK)'
+        $promptResult = Invoke-Prompts $prompt
+        $modelClassPartialName = $promptResult['userprompt']
+        ShowProgressMessage -message 'Looking for model classes' -numChars 15
     }
 }
 function dotnet-scaffold-view{
@@ -136,15 +140,16 @@ function dotnet-scaffold-layout{
 
 function ShowProgressMessage{
     [cmdletbinding()]
-    param()
-    process{
-        [int]$numChars = 60;
+    param(
+        [string]$message = "Working ",
+        [int]$numCharsToPrint = 60,
         [int]$waitTimeMilliseconds = 100
-
-        "Working " | Write-Host -NoNewline
-        for($i = 0;$i -lt $numChars;$i++){
+    )
+    process{
+        "{0} " -f $message | Write-Host -NoNewline
+        for($i = 0;$i -lt $numCharsToPrint;$i++){
             '*' | Write-Host -NoNewline
-            Start-Sleep -Milliseconds 50
+            Start-Sleep -Milliseconds $waitTimeMilliseconds
         }
         # to get the cursor on a new line for future output
         '' | Write-Host
