@@ -185,39 +185,37 @@ function dotnet-scaffold-api-controller-ef{
 
         switch($confirmPromptResult['confirmContinue']){
             'yes' {
-                PrintGeneratingFiles
+                $files = @(
+                    GetFileObject -filename "YourProject.csproj" -newFile $false
+                    GetFileObject -filename "Data/$dbContextClassName" -newFile $true
+                    GetFileObject -filename "Controller/$controllerName" -newFile $true
+                    GetFileObject -filename "Program.cs" -newFile $false
+                    GetFileObject -filename "Properties/serviceDependencies.json"  -newFile $true
+                    GetFileObject -filename "Properties/serviceDependencies.local.json"  -newFile $true
+                    GetFileObject -filename "appSettings.json"  -newFile $true
+                )
+
+                PrintFileMessages -fileObject $files
+
+                # dotnet scaffold api controller ef model  newdbcontext ContactsDbContext
+                $msg = "`r`nRun the command below to get the same result without console interactivity: `r`n`tdotnet scaffold api controller ef model " -f $selectedModelClass
+                if($createDbContextOrCreateNew){
+                    $msg += (' newdbcontext {0}' -f $dbContextClassName)
+                }
+                else{
+                    $msg += (' dbcontext {0}' -f $dbContextClassName)
+                }
+                $msg += (' controller' -f $controllerName)
+                '' | Write-Output
+                'Succeeded without any issues' | Write-Host -ForegroundColor Green
+                $msg | Write-Output
             }
             'no' {
                 'go back somehow'
             }
             default{ throw  ('Unknown choice: [{0}]' -f  $promptResult['confirmContinue']) }
         }
-
-        $files = @(
-            GetFileObject -filename "YourProject.csproj" -newFile $false
-            GetFileObject -filename "Data/$dbContextClassName" -newFile $true
-            GetFileObject -filename "Controller/$controllerName" -newFile $true
-            GetFileObject -filename "Program.cs" -newFile $false
-            GetFileObject -filename "Properties/serviceDependencies.json"  -newFile $true
-            GetFileObject -filename "Properties/serviceDependencies.local.json"  -newFile $true
-            GetFileObject -filename "appSettings.json"  -newFile $true
-        )
-
-        PrintFileMessages -fileObject $files
-
-        # dotnet scaffold api controller ef model  newdbcontext ContactsDbContext
-        $msg = "`r`nRun the command below to get the same result without console interactivity: `r`n`tdotnet scaffold api controller ef model " -f $selectedModelClass
-        if($createDbContextOrCreateNew){
-            $msg += (' newdbcontext {0}' -f $dbContextClassName)
-        }
-        else{
-            $msg += (' dbcontext {0}' -f $dbContextClassName)
-        }
-        $msg += (' controller' -f $controllerName)
-
-        'Succeeded without any issues' | Write-Output
-        $msg | Write-Output
-    }   
+    }
 }
 function GetFileObject{
     [cmdletbinding()]
@@ -236,6 +234,7 @@ function GetFileObject{
         }
     }
 }
+$random = new-object random
 function PrintFileMessages{
     [cmdletbinding()]
     param(
@@ -244,30 +243,10 @@ function PrintFileMessages{
     process{
         ShowProgressMessage -message "Getting ready" -numChars 10 -waitTimeMilliseconds 100
         foreach($file in $fileObject){
-            '{0}{1} ' -f $file.message, $file.filename | Write-Host -NoNewline
-            ShowProgressMessage -message "**********" -numChars 10 -waitTimeMilliseconds 10
+            $numStars = $random.Next(30)
+            # '{0}{1} ' -f $file.message, $file.filename | Write-Host -NoNewline
+            ShowProgressMessage -message ('{0}{1} ' -f $file.message, $file.filename) -numChars $numStars -waitTimeMilliseconds 2
         }
-    }
-}
-<#
-modified:   ApiScaffolding01.csproj
-new file:   Data/PersonContext.cs
-new file:   PeopleController.cs
-modified:   Program.cs
-new file:   Properties/serviceDependencies.json
-new file:   Properties/serviceDependencies.local.json
-modified:   appsettings.json
-#>
-function PrintGeneratingFiles{
-    [cmdletbinding()]
-    param(
-        [string[]]$controllerName
-    )
-    process{
-        $filesToCreate = @(
-            Get-FullPath -path 'Controllers\ContactsController'
-        )
-        # ShowProgressMessage
     }
 }
 
@@ -339,7 +318,7 @@ function dotnet-scaffold-layout{
         'inside layout' | write-output
     }
 }
-
+#********** **********
 function ShowProgressMessage{
     [cmdletbinding()]
     param(
