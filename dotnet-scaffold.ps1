@@ -30,7 +30,6 @@ function dotnet-scaffold-api{
     [cmdletbinding()]
     param()
     process{
-        'inside api' | write-output
         $prompts = @(
             New-PromptObject `
             -promptType PickOne `
@@ -186,7 +185,7 @@ function dotnet-scaffold-api-controller-ef{
 
         switch($confirmPromptResult['confirmContinue']){
             'yes' {
-                'confirmed'
+                PrintGeneratingFiles
             }
             'no' {
                 'go back somehow'
@@ -194,14 +193,81 @@ function dotnet-scaffold-api-controller-ef{
             default{ throw  ('Unknown choice: [{0}]' -f  $promptResult['confirmContinue']) }
         }
 
-        'Confirm: {0}' -f $confirmPromptResult['confirmContinue'] | Write-Output
+        $files = @(
+            GetFileObject -filename "YourProject.csproj" -newFile $false
+            GetFileObject -filename "Data/$dbContextClassName" -newFile $true
+            GetFileObject -filename "Controller/$controllerName" -newFile $true
+            GetFileObject -filename "Program.cs" -newFile $false
+            GetFileObject -filename "Properties/serviceDependencies.json"  -newFile $true
+            GetFileObject -filename "Properties/serviceDependencies.local.json"  -newFile $true
+            GetFileObject -filename "appSettings.json"  -newFile $true
+        )
+
+        PrintFileMessages -fileObject $files
+
+        # dotnet scaffold api controller ef model  newdbcontext ContactsDbContext
+        $msg = "`r`nRun the command below to get the same result without console interactivity: `r`n`tdotnet scaffold api controller ef model " -f $selectedModelClass
+        if($createDbContextOrCreateNew){
+            $msg += (' newdbcontext {0}' -f $dbContextClassName)
+        }
+        else{
+            $msg += (' dbcontext {0}' -f $dbContextClassName)
+        }
+        $msg += (' controller' -f $controllerName)
+
+        'Succeeded without any issues' | Write-Output
+        $msg | Write-Output
+    }   
+}
+function GetFileObject{
+    [cmdletbinding()]
+    param(
+        [string]$filename,
+        [bool]$newFile = $false
+    )
+    process{
+        [string]$message = "Modifying "
+        if($newFile){
+            $message = "Creating "
+        }
+        new-object psobject -Property @{
+            Filename = $filename
+            Message = $message
+        }
     }
 }
-
-function VerifyOptions{
+function PrintFileMessages{
     [cmdletbinding()]
-    param()
+    param(
+        $fileObject
+    )
     process{
+        ShowProgressMessage -message "Getting ready" -numChars 10 -waitTimeMilliseconds 100
+        foreach($file in $fileObject){
+            '{0}{1} ' -f $file.message, $file.filename | Write-Host -NoNewline
+            ShowProgressMessage -message "**********" -numChars 10 -waitTimeMilliseconds 10
+        }
+    }
+}
+<#
+modified:   ApiScaffolding01.csproj
+new file:   Data/PersonContext.cs
+new file:   PeopleController.cs
+modified:   Program.cs
+new file:   Properties/serviceDependencies.json
+new file:   Properties/serviceDependencies.local.json
+modified:   appsettings.json
+#>
+function PrintGeneratingFiles{
+    [cmdletbinding()]
+    param(
+        [string[]]$controllerName
+    )
+    process{
+        $filesToCreate = @(
+            Get-FullPath -path 'Controllers\ContactsController'
+        )
+        # ShowProgressMessage
     }
 }
 
