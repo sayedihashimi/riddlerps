@@ -143,7 +143,8 @@ function dotnet-scaffold-api-controller-ef{
         $createDbContextOrCreateNew = $promptResult['createDbContext']
         # $allOptionsSelected['Select existing DbContext or create a new one?'] = $createDbContextOrCreateNew
 
-        [string]$dbContextClassName=''
+        [string]$selectedDbProvider = ''
+        [string]$dbContextClassName = ''
         switch($promptResult['createDbContext']){
             'select existing' {
                 ShowProgressMessage -message 'Looking for DbContext classes' -numChars 15
@@ -162,6 +163,8 @@ function dotnet-scaffold-api-controller-ef{
             }
             'create new' {
                 $dbContextClassName = PromptForNameWithSuffix -message 'Name for the new DbContext class?' -suffix 'Context' -noSuffixConfirmMessage 'Select the name of the context class to create'
+                # get the dbprovider
+                $selectedDbProvider = PromptForDbProvider
             }
             default{ throw  ('Unknown choice: [{0}]' -f  $promptResult['createDbContext']) }
         }
@@ -187,8 +190,8 @@ function dotnet-scaffold-api-controller-ef{
             'yes' {
                 $files = @(
                     GetFileObject -filename "YourProject.csproj" -newFile $false
-                    GetFileObject -filename "Data/$dbContextClassName" -newFile $true
-                    GetFileObject -filename "Controller/$controllerName" -newFile $true
+                    GetFileObject -filename ("Data/{0}.cs" -f $dbContextClassName) -newFile $true
+                    GetFileObject -filename ("Controller/{0}.cs" -f $controllerName) -newFile $true
                     GetFileObject -filename "Program.cs" -newFile $false
                     GetFileObject -filename "Properties/serviceDependencies.json"  -newFile $true
                     GetFileObject -filename "Properties/serviceDependencies.local.json"  -newFile $true
@@ -199,13 +202,14 @@ function dotnet-scaffold-api-controller-ef{
 
                 # dotnet scaffold api controller ef model  newdbcontext ContactsDbContext
                 $msg = "`r`nRun the command below to get the same result without console interactivity: `r`n`tdotnet scaffold api controller ef model " -f $selectedModelClass
-                if($createDbContextOrCreateNew){
+                if($createDbContextOrCreateNew -eq 'create new'){
+                    $msg += ('dbprovider {0}' -f $selectedDbProvider)
                     $msg += (' newdbcontext {0}' -f $dbContextClassName)
                 }
                 else{
-                    $msg += (' dbcontext {0}' -f $dbContextClassName)
+                    $msg += ('dbcontext {0}' -f $dbContextClassName)
                 }
-                $msg += (' controller' -f $controllerName)
+                $msg += (' controllerClassName {0}' -f $controllerName)
                 '' | Write-Output
                 'Succeeded without any issues' | Write-Host -ForegroundColor Green
                 $msg | Write-Output
@@ -215,6 +219,24 @@ function dotnet-scaffold-api-controller-ef{
             }
             default{ throw  ('Unknown choice: [{0}]' -f  $promptResult['confirmContinue']) }
         }
+    }
+}
+function PromptForDbProvider{
+    [cmdletbinding()]
+    param()
+    process{
+    $prompt = New-PromptObject -name 'selectedDbProvider' -text 'Select the database provider' `
+                -promptType PickOne `
+                -options ([ordered]@{
+                            'sqlserver'='SQL Server'
+                            'sqlite'='SQLite'
+                            'postgresql'='PostgreSQL'
+                            'azurecosmos'='Azure Cosmos DB'
+                        })
+
+    $promptResult = Invoke-Prompts $prompt -IndentLevel 0
+    # return the selected value
+    $promptResult['selectedDbProvider']
     }
 }
 function GetFileObject{
@@ -279,6 +301,7 @@ function PromptForNameWithSuffix{
             $dbContextClassName = $promptResult['providedName']
         }
 
+        # return the selected value
         $dbContextClassName
     }
 }
