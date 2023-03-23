@@ -15,7 +15,7 @@ function StartDotnetScaffold{
             })
         )
 
-        $promptResult = Invoke-Prompts $prompts
+        $promptResult = Invoke-Prompts $prompts -IndentLevel 0
         switch($promptResult['userprompt']){
             'api' {dotnet-scaffold-api}
             'view' {dotnet-scaffold-view}
@@ -40,7 +40,7 @@ function dotnet-scaffold-api{
                 'controller'='Controller based'
             })
         )
-        $promptResult = Invoke-Prompts $prompts
+        $promptResult = Invoke-Prompts $prompts -IndentLevel 0
 
         switch($promptResult['userprompt']){
             'minimal' {dotnet-scaffold-api-minimal}
@@ -70,7 +70,7 @@ function dotnet-scaffold-api-controller{
             })
         )
 
-        $promptResult = Invoke-Prompts $prompts
+        $promptResult = Invoke-Prompts $prompts -IndentLevel 0
 
         switch($promptResult['userprompt']){
             'empty' {dotnet-scaffold-api-controller-empty}
@@ -85,7 +85,7 @@ function dotnet-scaffold-api-controller-empty{
     param()
     process{
         $prompt = New-PromptObject -text 'Name of the controller?'
-        $promptResult = Invoke-Prompts $prompt
+        $promptResult = Invoke-Prompts $prompt -IndentLevel 0
 
         'Generating {0}.cs in folder {1}' -f $promptResult['userprompt'],$pwd | Write-Output
         ShowProgressMessage
@@ -98,7 +98,7 @@ function dotnet-scaffold-api-controller-readwrite{
     param()
     process{
         $prompt = New-PromptObject -text 'Name of the controller?'
-        $promptResult = Invoke-Prompts $prompt
+        $promptResult = Invoke-Prompts $prompt -IndentLevel 0
 
         'Generating read/write controller {0}.cs in folder {1}' -f $promptResult['userprompt'],$pwd | Write-Output
         ShowProgressMessage
@@ -110,12 +110,12 @@ function dotnet-scaffold-api-controller-ef{
     [cmdletbinding()]
     param()
     process{
-        $prompt = New-PromptObject -text 'What model class do you want to generte the content from? (Partial name is OK)'
-        $promptResult = Invoke-Prompts $prompt
+        # 1: get the model class to use
+        $prompt = New-PromptObject -text 'What model class do you want to generate the content from? (Partial name is OK)'
+        $promptResult = Invoke-Prompts $prompt -IndentLevel 0
         $modelClassPartialName = $promptResult['userprompt']
         ShowProgressMessage -message 'Looking for classes' -numChars 15
-        # $prompt = New-PromptObject -text 'Select the model class'
-        # returns 5 elements
+
         [string[]]$fakeNames = createDummyClassNamesFrom -partialName $modelClassPartialName
         $prompt = New-PromptObject -name 'action' -text 'Select the model class' `
                     -promptType PickOne `
@@ -126,70 +126,115 @@ function dotnet-scaffold-api-controller-ef{
                                 '3'=$fakeNames[3]
                                 '4' = $fakeNames[4]
                             })
-        $promptResult = Invoke-Prompts $prompt
-        'Class selected: "{0}"' -f $fakeNames[$promptResult['action']]
+        $promptResult = Invoke-Prompts $prompt -IndentLevel 0
+        $selectedModelClass = $fakeNames[$promptResult['action']]
+        'Class selected: "{0}"' -f $selectedModelClass
 
+        # $allOptionsSelected = [ordered]@{ 'Model class'=$selectedModelClass}
+
+        # 2: get the name of the DbContext, may be existing or create new
         $prompt = New-PromptObject -name 'createDbContext' -text 'Do you have a DbContext class that you want to use?' `
                             -promptType PickOne `
                             -options ([ordered]@{
-                                'yes'='yes'
-                                'no'='no, create a new DbContext'
+                                'select existing'='yes'
+                                'create new'='no, create a new DbContext'
                             })
-        $promptResult = Invoke-Prompts $prompt
+        $promptResult = Invoke-Prompts $prompt -IndentLevel 0
 
+        $createDbContextOrCreateNew = $promptResult['createDbContext']
+        # $allOptionsSelected['Select existing DbContext or create a new one?'] = $createDbContextOrCreateNew
+
+        [string]$dbContextClassName=''
         switch($promptResult['createDbContext']){
-            'yes' {dotnet-scaffold-api-controller-ef-existing-db-context}
-            'no' {dotnet-scaffold-api-controller-ef-new-db-context}
+            'select existing' {
+                ShowProgressMessage -message 'Looking for DbContext classes' -numChars 15
+                $fakeDbContextClasses = @('AdminDbContext','ContactsDbContext','HrDbContext','SalesDbContext')
+                $prompt = New-PromptObject -name 'selectedDbContext' -text 'Select the DbContext class to use' `
+                            -promptType PickOne `
+                            -options ([ordered]@{
+                                        $fakeDbContextClasses[0]=$fakeDbContextClasses[0]
+                                        $fakeDbContextClasses[1]=$fakeDbContextClasses[1]
+                                        $fakeDbContextClasses[2]=$fakeDbContextClasses[2]
+                                        $fakeDbContextClasses[3]=$fakeDbContextClasses[3]
+                                    })
+
+                $promptResult = Invoke-Prompts $prompt -IndentLevel 0
+                $dbContextClassName = $promptResult['selectedDbContext']
+            }
+            'create new' {
+                $dbContextClassName = PromptForNameWithSuffix -message 'Name for the new DbContext class?' -suffix 'Context' -noSuffixConfirmMessage 'Select the name of the context class to create'
+            }
             default{ throw  ('Unknown choice: [{0}]' -f  $promptResult['createDbContext']) }
         }
-    }
-}
-function dotnet-scaffold-api-controller-ef-existing-db-context{
-    [cmdletbinding()]
-    param()
-    process{
-        ShowProgressMessage -message 'Looking for DbContext classes' -numChars 15
-        $fakeDbContextClasses = @('AdminDbContext','ContactsDbContext','HrDbContext','SalesDbContext')
-        $prompt = New-PromptObject -name 'selectedDbContext' -text 'Select the DbContext class to use' `
-                    -promptType PickOne `
-                    -options ([ordered]@{
-                                $fakeDbContextClasses[0]=$fakeDbContextClasses[0]
-                                $fakeDbContextClasses[1]=$fakeDbContextClasses[1]
-                                $fakeDbContextClasses[2]=$fakeDbContextClasses[2]
-                                $fakeDbContextClasses[3]=$fakeDbContextClasses[3]
-                            })
+        # $allOptionsSelected['DbContext class name'] = $dbContextClassName
+        'Selected DbContextClassName: {0}' -f $dbContextClassName | Write-Output
 
-        $promptResult = Invoke-Prompts $prompt
+        # 3: get the name of the Controller, may be existing or create new
+        $controllerName = PromptForNameWithSuffix -message 'Controller name?' -suffix 'Controller' -noSuffixConfirmMessage 'Select the name of the Controller class to create'
+
+        $allOptionsSelected = [ordered]@{
+            'Model class' = $selectedModelClass
+            'Select existing DbContext or create a new one?' = $createDbContextOrCreateNew
+            'DbContext class name' = $dbContextClassName
+            'Controller class name' = $controllerName
+        }
+
+        'The settings below have been provided for scaffolding.' | Write-Output
+        $allOptionsSelected | Format-Table -AutoSize
+        $confirmPrompt = New-PromptObject -name 'confirmContinue' -text 'Generate the files now, with these settings?' -promptType Bool
+        $confirmPromptResult = Invoke-Prompts $confirmPrompt -IndentLevel 0
+
+        switch($confirmPromptResult['confirmContinue']){
+            'yes' {
+                'confirmed'
+            }
+            'no' {
+                'go back somehow'
+            }
+            default{ throw  ('Unknown choice: [{0}]' -f  $promptResult['confirmContinue']) }
+        }
+
+        'Confirm: {0}' -f $confirmPromptResult['confirmContinue'] | Write-Output
     }
 }
-function dotnet-scaffold-api-controller-ef-new-db-context{
+
+function VerifyOptions{
     [cmdletbinding()]
     param()
     process{
-        $prompt = New-PromptObject -text 'Name for the new DbContext class?'
-        $promptResult = Invoke-Prompts $prompt
+    }
+}
+
+function PromptForNameWithSuffix{
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory=$true,Position=0)]
+        [string]$message,
+
+        [Parameter(Mandatory=$true,Position=1)]
+        [string]$suffix=1,
+
+        [Parameter(Mandatory=$true,Position=2)]
+        [string]$noSuffixConfirmMessage
+    )
+    process{
+        $prompt = New-PromptObject -text $message
+        $promptResult = Invoke-Prompts $prompt -IndentLevel 0
         $dbContextClassName = $promptResult['userprompt']
 
-        if(-not ($dbContextClassName.EndsWith('Context'))){
+        if(-not ($dbContextClassName.EndsWith($suffix))){
             # see if the user wants to suffix it with Context
-            $prompt = New-PromptObject -name 'selectContextClassName' -text 'Select the name of the context class to create' `
+            $prompt = New-PromptObject -name 'providedName' -text 'Select the name of the context class to create' `
                     -promptType PickOne `
                     -options ([ordered]@{
                                 ('{0}' -f $dbContextClassName)=('{0}' -f $dbContextClassName)
-                                ('{0}Context' -f $dbContextClassName)=('{0}Context' -f $dbContextClassName)
+                                ('{0}{1}' -f $dbContextClassName, $suffix)=('{0}{1}' -f $dbContextClassName, $suffix)
                             })
-            $promptResult = Invoke-Prompts $prompt
-            $dbContextClassName = $promptResult['selectContextClassName']
+            $promptResult = Invoke-Prompts $prompt -IndentLevel 0
+            $dbContextClassName = $promptResult['providedName']
         }
 
-        'Selected DbContextClassName: {0}' -f $dbContextClassName | Write-Output
-    }
-}
-function dotnet-scaffold-api-controller-ef-get-controller-name{
-    [cmdletbinding()]
-    param()
-    process{
-
+        $dbContextClassName
     }
 }
 function createDummyClassNamesFrom{
