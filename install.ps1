@@ -6,7 +6,7 @@ function Get-ScriptDirectory
 }
 
 $scriptDir = ((Get-ScriptDirectory) + "\")
-$modulePath = (Join-Path -Path $scriptDir -ChildPath ("src\{0}.psm1" -f $moduleName))
+$modulePath = (Join-Path -Path $scriptDir -ChildPath ("src\{0}\{0}.psm1" -f $moduleName))
 
 if(Test-Path $modulePath){
     "Importing [{0}] module from [{1}]" -f $moduleName, $modulePath | Write-Verbose
